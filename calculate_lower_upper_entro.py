@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 
 # Dados da Tabela I (cada coluna corresponde a um N)
 # Cada coluna deve somar 100 (percentual). As linhas representam tentativas (i=1..27).
-tabela = {
+tabela_en = {
     1: [18.2, 10.7, 8.6, 6.7, 6.5, 5.8, 5.6, 5.2, 5.0, 4.3, 3.1, 2.8, 2.4, 2.3, 2.1, 2.0, 1.6, 1.6, 1.6, 1.3, 1.2, 0.8, 0.3, 0.1, 0.1, 0.1, 0.1],
     2: [29.2, 14.8, 10.0, 8.6, 7.1, 5.5, 4.5, 3.6, 3.0, 2.6, 2.2, 1.9, 1.5, 1.2, 1.0, 0.9, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.0, 0, 0, 0],
     3: [37.6, 17.6, 11.0, 7.3, 5.0, 3.8, 3.1, 2.5, 2.0, 1.7, 1.3, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -11,18 +12,36 @@ tabela = {
     6: [57.9, 19.0, 10.9, 6.0, 3.4, 2.0, 1.2, 0.8, 0.5, 0.3, 0.2, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 }
 
+file_path = "tabela_leandro.csv"
+df = pd.read_csv(file_path)
+df_filled = df.fillna(0.0)
+
+tabela_leandro = {int(col): df_filled[col].tolist() for col in df_filled.columns}
+
 def upper_lower(col_data):
-    q = np.array(col_data, dtype=float) / 100.0
+    """
+    col_data: lista de frequências observadas (contagens).
+    Retorna (upper, lower) segundo Shannon (1951).
+    """
+
+    # Normalizar para distribuição de probabilidade
+    total = np.sum(col_data)
+    q = np.array(col_data, dtype=float) / total
+    q = np.sort(q)[::-1]
+    print(col, np.sum(q), np.all(np.diff(q) <= 0))
     # Upper bound: entropia da distribuição q
     upper = -np.sum([p * np.log2(p) for p in q if p > 0.0])
-    # Lower bound (fórmula corrigida de Shannon)
+
+    # Lower bound: fórmula (q_i - q_{i+1}) log2(i), com q_{n+1} = 0
     q_ext = np.append(q, 0.0)
-    lower = sum(i* (q_ext[i-1] - q_ext[i]) * np.log2(i) for i in range(1, len(q_ext)))
+    lower = sum(i * (q_ext[i-1] - q_ext[i]) * np.log2(i)
+                for i in range(1, len(q_ext)))
+
     return upper, lower
 
 # Calcular para todas as colunas
 results = {}
-for col, values in tabela.items():
+for col, values in tabela_leandro.items():
     results[col] = upper_lower(values)
 
 # Impressão no formato desejado
@@ -34,8 +53,8 @@ for col in results:
     print(col, end="\t")
 print()
 for col in results:
-    print(f"{results[col][0]:.2f}", end="\t")
+    print(f"{results[col][0]:.4f}", end="\t")
 print()
 for col in results:
-    print(f"{results[col][1]:.2f}", end="\t")
+    print(f"{results[col][1]:.4f}", end="\t")
 print()
