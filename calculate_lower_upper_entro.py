@@ -6,6 +6,52 @@ import matplotlib.pyplot as plt
 file_path = "tabela_leandro.csv"
 df = pd.read_csv(file_path)
 df_filled = df.fillna(0.0)
+
+
+# --- Gerar imagem da tabela original com destaque ---
+def salvar_tabela_imagem(df, filename="tabela_original.png"):
+    """
+    Gera uma imagem da tabela do DataFrame usando matplotlib.
+    - Cabeçalho destacado
+    - Coluna auxiliar inteira com número da linha
+    """
+    # Adicionar coluna de índice como apoio (inteiro)
+    df_aux = df.copy()
+    df_aux.insert(0, "Linha", np.arange(1, len(df_aux) + 1, dtype=int))
+
+    fig, ax = plt.subplots(figsize=(14, 7))  
+    ax.axis('tight')
+    ax.axis('off')
+
+    tabela = ax.table(cellText=df_aux.values,
+                      colLabels=df_aux.columns,
+                      loc='center',
+                      cellLoc='center')
+
+    # Ajustar fonte e espaçamento
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(9)
+    tabela.scale(1.2, 1.2)
+
+    # Destacar cabeçalho e coluna auxiliar
+    for (row, col), cell in tabela.get_celld().items():
+        if row == 0:  # cabeçalho
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#40466e')
+        elif col == 0:  # coluna "Linha"
+            cell.set_text_props(weight='bold')
+            cell.set_facecolor('#e0e0e0')
+
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    plt.close(fig)
+
+    return f"Tabela salva como: {filename}"
+
+
+# Salvar a tabela formatada
+salvar_tabela_imagem(df_filled, "tabela_formatada.png")
+
 tabela_leandro = {int(col): df_filled[col].tolist() for col in df_filled.columns}
 
 # --- Função para calcular upper e lower bounds e retornar q ---
@@ -49,6 +95,7 @@ print()
 for col in results:
     print(f"{results[col][1]:.4f}", end="\t")
 print()
+
 # --- Função para plotar e salvar gráficos (Revisada) ---
 def plot_distribution(probabilities, labels, title, filename):
     """
@@ -107,6 +154,45 @@ def plot_distribution(probabilities, labels, title, filename):
 
     return f"Gráfico salvo como: {filename}"
 
+df_results = pd.DataFrame([
+    {"N": col, "Upper": results[col][0], "Lower": results[col][1]}
+    for col in results
+])
+
+# --- Função para salvar a tabela de resultados como imagem ---
+def salvar_tabela_resultados(df, filename="tabela_resultados.png"):
+    """
+    Salva a tabela de resultados (Upper e Lower) como imagem.
+    """
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.axis('tight')
+    ax.axis('off')
+
+    tabela = ax.table(cellText=df.values,
+                      colLabels=df.columns,
+                      loc='center',
+                      cellLoc='center')
+
+    # Ajustar estilo
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(10)
+    tabela.scale(1.2, 1.2)
+
+    # Destacar cabeçalho
+    for (row, col), cell in tabela.get_celld().items():
+        if row == 0:  # cabeçalho
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('#40466e')
+
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    plt.close(fig)
+
+    return f"Tabela de resultados salva como: {filename}"
+
+
+# --- Salvar a tabela de resultados ---
+salvar_tabela_resultados(df_results, "tabela_resultados.png")
 
 # --- Gerar e salvar todos os gráficos ---
 for col, q in qs.items():
